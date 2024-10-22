@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import func
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models import Base
@@ -23,7 +24,7 @@ class Card(Base):
     name: Mapped[str]
     description: Mapped[Optional[str]]
     due_date: Mapped[Optional[datetime]]
-    stopwatch: Mapped[Optional[str]]
+    stopwatch: Mapped[Optional[dict]] = mapped_column(JSONB)
     created_at: Mapped[Optional[datetime]]
     updated_at: Mapped[Optional[datetime]]
     is_due_date_completed: Mapped[Optional[bool]]
