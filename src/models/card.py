@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import JSON, func
+from sqlalchemy import func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models import Base
@@ -23,7 +23,7 @@ class Card(Base):
     name: Mapped[str]
     description: Mapped[Optional[str]]
     due_date: Mapped[Optional[datetime]]
-    stopwatch: Mapped[Optional[JSON]]
+    stopwatch: Mapped[Optional[str]]
     created_at: Mapped[Optional[datetime]]
     updated_at: Mapped[Optional[datetime]]
     is_due_date_completed: Mapped[Optional[bool]]
