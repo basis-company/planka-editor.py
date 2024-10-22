@@ -1,4 +1,5 @@
 .env
 venv
 .mypy_cache
-\data
+/data
+__pycache__
