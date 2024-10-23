@@ -1,6 +1,6 @@
 from typing import Optional, Type, TypeVar
 
-from services.database import create_sqlalchemy_session
+from src.services.database import create_sqlalchemy_session
 from sqlalchemy.orm import Session
 
 T = TypeVar('T')
