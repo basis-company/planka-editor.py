@@ -1,4 +1,4 @@
-from typing import Optional, Type, TypeVar
+from typing import Dict, Any, Optional, Type, TypeVar
 
 from src.services.database import create_sqlalchemy_session
 from sqlalchemy.orm import Session
@@ -16,8 +16,16 @@ def database() -> Session:
             session.close()
 
 
-def persist(instance: T) -> T:
+def persist(instance: T, unique_keys: Dict[str, Any]) -> Optional[T]:
     with database() as session:
+        existing_instance = (
+            session.query(type(instance))
+            .filter_by(**unique_keys)
+            .first()
+        )
+        if existing_instance:
+            return None
+        
         session.add(instance)
         session.commit()
 
