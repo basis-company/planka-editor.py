@@ -1,24 +1,24 @@
-import os
-import json
+"""
+Итерация 1: Импортер для уровня проектов.
+"""
+
 from datetime import datetime
 from src.models.project import Project
 from src.models.project_manager import ProjectManager
+
 from src.crud import persist
+from src.services.data import load_json, save_json
 
 
-project_json_path = 'src/data/project.json'
-if not os.path.exists(project_json_path):
-    print(f'Файл {project_json_path} не найден!')
-else:
-    with open(project_json_path, 'r') as project_file:
-        project_data = json.load(project_file)
+project_data = load_json('project.json')
+if not project_data:
+    print('Файл project.json не найден или пуст!')
+    project_data = []
 
-project_manager_json_path = 'src/data/project_manager.json'
-if not os.path.exists(project_manager_json_path):
-        print(f'Файл {project_manager_json_path} не найден!')
-else:
-    with open(project_manager_json_path, 'r') as project_manager_file:
-        managers = json.load(project_manager_file)
+project_manager_data = load_json('project_manager.json')
+if not project_manager_data:
+    print('Файл project_manager.json не найден или пуст!')
+    project_manager_data = []
 
 
 # Projects
@@ -38,7 +38,7 @@ for project_entity in project_data:
         project_entity['planka_id'] = created_project_data.id
 
     # Project managers
-    for manager in managers:
+    for manager in project_manager_data:
         manager_instance = ProjectManager(
             user_id=manager['planka_id'],
             project_id=created_project_data.id
@@ -49,14 +49,13 @@ for project_entity in project_data:
         }
         created_project_manager = persist(manager_instance, _unique_keys)
         if created_project_manager is None:
-            print(f'- Менеджер {manager["planka_email"]} уже присутствует в проекте {project_entity["title"]}!')
+            print(f'- Менеджер {manager["planka_email"]} уже фигурирует '
+                  f'в проекте {project_entity["title"]}!')
         else:
             print(f'- Менеджер {manager["planka_email"]} добавлен в проект.')
 
 
 # Update projects.json
-with open(project_json_path, 'w') as project_file:
-    json.dump(project_data, project_file, indent=4)
-
-print(f'Проекты и менеджеры успешно импортированы в Planka. '
-      f'Данные сохранены в {project_json_path}')
+save_json('project.json', project_data)
+print('Проекты и менеджеры успешно импортированы в Planka. '
+      'Данные сохранены в project.json')

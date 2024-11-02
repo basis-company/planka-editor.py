@@ -1,7 +1,10 @@
 from typing import Dict, Any, Optional, Type, TypeVar
 
 from src.services.database import create_sqlalchemy_session
+from src.services.data import load_json, save_json
 from sqlalchemy.orm import Session
+
+from constants import LOG_FILE_NAME
 
 T = TypeVar('T')
 
@@ -16,20 +19,41 @@ def database() -> Session:
             session.close()
 
 
-def persist(instance: T, unique_keys: Dict[str, Any]) -> Optional[T]:
+def persist(instance: T, unique_keys: Dict[str, Any] = None) -> Optional[T]:
     with database() as session:
-        existing_instance = (
-            session.query(type(instance))
-            .filter_by(**unique_keys)
-            .first()
-        )
-        if existing_instance:
-            return None
-        
+        if unique_keys is not None:
+            existing_instance = (
+                session.query(type(instance))
+                .filter_by(**unique_keys)
+                .first()
+            )
+            if existing_instance:
+                return None
+
         session.add(instance)
         session.commit()
 
+        # execution logging
+        uploaded_data = load_json(LOG_FILE_NAME)
+        entity_name = type(instance).__name__
+        if entity_name not in uploaded_data:
+            uploaded_data[entity_name] = []
+        uploaded_data[entity_name].append(instance.id)
+        save_json(LOG_FILE_NAME, uploaded_data)
+
         return instance
+
+
+def erase(entity_class, entity_id: int) -> bool:
+    with database() as session:
+        entity = session.query(entity_class).get(entity_id)
+        if entity:
+            session.delete(entity)
+            session.commit()
+            return True
+        else:
+            print(f"Сущность с id {entity_id} не найдена.")
+            return False
 
 
 def get_instance(cls: Type[T], id: int) -> T:

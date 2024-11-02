@@ -1,62 +1,49 @@
-import os
-import json
+"""
+Итерация 2: Импортер для уровня досок.
+"""
+
 from datetime import datetime
-from src.models.project import Project
-from src.models.project_manager import ProjectManager
+from src.models.board import Board
+
 from src.crud import persist
+from src.services.location import get_location_planka_id
+from src.services.data import load_json, save_json
 
 
-project_json_path = 'src/data/project.json'
-if not os.path.exists(project_json_path):
-    print(f'Файл {project_json_path} не найден!')
-else:
-    with open(project_json_path, 'r') as project_file:
-        project_data = json.load(project_file)
-
-project_manager_json_path = 'src/data/project_manager.json'
-if not os.path.exists(project_manager_json_path):
-        print(f'Файл {project_manager_json_path} не найден!')
-else:
-    with open(project_manager_json_path, 'r') as project_manager_file:
-        managers = json.load(project_manager_file)
+board_data = load_json('board.json')
+if not board_data:
+    print('Файл board.json не найден или пуст!')
+    board_data = []
 
 
-# Projects
-for project_entity in project_data:
-    project_instance = Project(
-        created_at=datetime.fromtimestamp(project_entity['timestamp'] / 1000),
-        name=project_entity['title']
+# Boards
+for board_entity in board_data:    
+    board_instance = Board(
+        name=board_entity['title'],
+        project_id=get_location_planka_id(
+            'project.json',
+            board_entity['location']
+        ),
+        created_at=datetime.fromtimestamp(board_entity['timestamp'] / 1000),
+        position=0
     )
 
-    unique_keys = {'name': project_instance.name}
-    created_project_data = persist(project_instance, unique_keys)
+    unique_keys = {
+        'name': board_instance.name,
+        'project_id': board_instance.project_id
+    }
+    created_project_data = persist(board_instance, unique_keys)
+
     if created_project_data is None:
-        print(f'Проект {project_entity["title"]} уже был создан ранее!')
+        print(f'Доска {board_entity["title"]} '
+              f'является дублем и не будет создана!')
         continue
     else:
-        print(f'Проект {project_entity["title"]} создан.')
-        project_entity['planka_id'] = created_project_data.id
-
-    # Project managers
-    for manager in managers:
-        manager_instance = ProjectManager(
-            user_id=manager['planka_id'],
-            project_id=created_project_data.id
-        )
-        _unique_keys = {
-            'project_id': manager_instance.project_id,
-            'user_id': manager_instance.user_id 
-        }
-        created_project_manager = persist(manager_instance, _unique_keys)
-        if created_project_manager is None:
-            print(f'- Менеджер {manager["planka_email"]} уже присутствует в проекте {project_entity["title"]}!')
-        else:
-            print(f'- Менеджер {manager["planka_email"]} добавлен в проект.')
+        print(f'Доска {board_entity["title"]} создана.')
+        board_entity['planka_id'] = created_project_data.id
 
 
 # Update projects.json
-with open(project_json_path, 'w') as project_file:
-    json.dump(project_data, project_file, indent=4)
-
-print(f'Проекты и менеджеры успешно импортированы в Planka. '
-      f'Данные сохранены в {project_json_path}')
+save_json('board.json', board_data)
+print('Доски успешно импортированы в проекты Planka. '
+      'Данные сохранены в board.json')
