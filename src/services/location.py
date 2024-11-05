@@ -23,8 +23,9 @@ def get_location_planka_id(file_name, location_id):
             if planka_id is not None:
                 return planka_id
             else:
-                raise ValueError(f"[get_location_planka_id] ОШИБКА: Сущность "
-                                 f"с id {location_id} не содержит planka_id!")
+                raise ValueError(f"[get_location_planka_id] ОШИБКА: "
+                                 f"Родительская сущность с id {location_id} "
+                                 f"не имеет planka_id!")
 
-    raise ValueError(f"[get_location_planka_id] ОШИБКА: Сущность с "
-                     f"id {location_id} не найдена в данных!")
+    raise ValueError(f"[get_location_planka_id] ОШИБКА: Родительская сущность "
+                     f"с id {location_id} не найдена в {file_name}!")
