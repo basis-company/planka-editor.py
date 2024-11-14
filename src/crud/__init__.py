@@ -56,6 +56,31 @@ def erase(entity_class, entity_id: int) -> bool:
             return False
 
 
+def persist(instance: T, unique_keys: Dict[str, Any] = None) -> Optional[T]:
+    with database() as session:
+        if unique_keys is not None:
+            existing_instance = (
+                session.query(type(instance))
+                .filter_by(**unique_keys)
+                .first()
+            )
+            if existing_instance:
+                return None
+
+        session.add(instance)
+        session.commit()
+
+        # execution logging
+        uploaded_data = load_json(LOG_FILE_NAME)
+        entity_name = type(instance).__name__
+        if entity_name not in uploaded_data:
+            uploaded_data[entity_name] = []
+        uploaded_data[entity_name].append(instance.id)
+        save_json(LOG_FILE_NAME, uploaded_data)
+
+        return instance
+
+
 def get_instance(cls: Type[T], id: int) -> T:
     with database() as session:
         instance = session.get(cls, id)

@@ -10,11 +10,7 @@ from src.services.data import load_json, save_json
 from src.services.location import get_location_planka_id
 
 
-# Тайтлы стикеров, которые будут игнорироваться
-FORBIDDEN_TITLES = ['User', 'Deadline']
-
 list_data = load_json('list.json')
-
 
 # Lists
 for list_entity in list_data:
@@ -46,6 +42,6 @@ for list_entity in list_data:
 
 
 save_json('list.json', list_data)
-print('Готово. Импорт успешно завершен. '
+print('Импорт успешно завершен. '
       'Идентификаторы Planka добавлены в json. '
-      'Для отмены импорта воспользуйтесь сервисом undo.py')
+      'Для отмены воспользуйтесь сервисом undo.py')
