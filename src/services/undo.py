@@ -9,6 +9,7 @@ from src.models.board import Board
 from src.models.card import Card
 from src.models.project_manager import ProjectManager
 from src.models.project import Project
+from src.models.user_account import UserAccount
 
 
 class_mapping = {
@@ -17,7 +18,8 @@ class_mapping = {
     'Board': Board,
     'Card': Card,
     'ProjectManager': ProjectManager,
-    'Project': Project
+    'Project': Project,
+    'UserAccount': UserAccount
 }
 
 
@@ -36,7 +38,6 @@ def undo(entity_class_name: str):
     entity_ids = uploaded_data[entity_class_name]
     remaining_ids = []
 
-    # Перебираем все id текущей категории
     for entity_id in entity_ids:
         if erase(entity_class, entity_id):
             print(f"Удалено: {entity_class_name} с ID {entity_id}.")
