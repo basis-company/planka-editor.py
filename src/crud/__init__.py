@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Type, TypeVar
+from typing import Dict, Any, Optional, Type, TypeVar, Union
 
 from src.services.database import create_sqlalchemy_session
 from src.services.data import load_json, save_json
@@ -19,7 +19,31 @@ def database() -> Session:
             session.close()
 
 
-def persist(instance: T, unique_keys: Dict[str, Any] = None) -> Optional[T]:
+def persist(
+    instance: T,
+    unique_keys: Optional[Dict[str, Any]] = None,
+    return_dublicate: bool = False
+) -> Optional[T]:
+    """
+    Создает новую сущность в базе данных или возвращает уже существующую, если 
+    она соответствует уникальным ключам из unique_keys.
+
+    Если сущность с такими уникальными ключами уже существует, то по умолчанию 
+    возвращает None. Если параметр return_dublicate установлен в True, возвращает 
+    объект существующей сущности.
+
+    Args:
+        instance (T): Сущность для сохранения в базе данных.
+        unique_keys (dict, optional): Уникальные ключи для поиска существующей сущности.
+                                      Если не указаны, поиск не выполняется.
+        return_dublicate (bool, optional): Флаг, указывающий, нужно ли возвращать 
+                                           объект существующей сущности при нахождении дубликата.
+                                           По умолчанию False.
+
+    Returns:
+        T | None: Возвращает объект сущности, если она была добавлена или найдена, 
+                  или None, если сущность с такими ключами уже существует и return_dublicate=False.
+    """
     with database() as session:
         if unique_keys is not None:
             existing_instance = (
@@ -28,6 +52,8 @@ def persist(instance: T, unique_keys: Dict[str, Any] = None) -> Optional[T]:
                 .first()
             )
             if existing_instance:
+                if return_dublicate:
+                    return existing_instance
                 return None
 
         session.add(instance)
@@ -54,31 +80,6 @@ def erase(entity_class, entity_id: int) -> bool:
         else:
             print(f"Сущность с id {entity_id} не найдена.")
             return False
-
-
-def persist(instance: T, unique_keys: Dict[str, Any] = None) -> Optional[T]:
-    with database() as session:
-        if unique_keys is not None:
-            existing_instance = (
-                session.query(type(instance))
-                .filter_by(**unique_keys)
-                .first()
-            )
-            if existing_instance:
-                return None
-
-        session.add(instance)
-        session.commit()
-
-        # execution logging
-        uploaded_data = load_json(LOG_FILE_NAME)
-        entity_name = type(instance).__name__
-        if entity_name not in uploaded_data:
-            uploaded_data[entity_name] = []
-        uploaded_data[entity_name].append(instance.id)
-        save_json(LOG_FILE_NAME, uploaded_data)
-
-        return instance
 
 
 def get_instance(cls: Type[T], id: int) -> T:
