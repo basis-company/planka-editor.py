@@ -1,6 +1,6 @@
 '''
 Сниппет добавляет значение is_due_date, необходимое
-для импорта работы статуса "done" карточек.
+для импорта статуса "done" карточек.
 '''
 from src.services.data import load_json, save_json
 

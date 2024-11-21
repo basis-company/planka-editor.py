@@ -1,4 +1,4 @@
-from typing import Dict, Any, Optional, Type, TypeVar, Union
+from typing import Dict, Any, Optional, Type, TypeVar
 
 from src.services.database import create_sqlalchemy_session
 from src.services.data import load_json, save_json
