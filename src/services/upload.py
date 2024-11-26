@@ -4,21 +4,20 @@ from src.services.auth import get_access_token
 import httpx
 
 
-def upload_attachment(file_url, card_id):
+def persist_attachment(file_url, card_id):
     api_token = get_access_token()
 
     headers = {
         'Authorization': f'Bearer {api_token}',
     }
 
+    # filename
     if '/' in file_url:
         *_, file_name = file_url.split('/')
     else:
         file_name = 'Untitled'
-        # raise ValueError('В url файла не найден разделитель /')
 
     url = f'https://planka.basis.services/api/cards/{card_id}/attachments'
-    result = ''
 
     try:
         with httpx.Client() as client:
@@ -30,7 +29,7 @@ def upload_attachment(file_url, card_id):
                 "file": (
                     file_name,
                     file_content,
-                    response['Content-Type']
+                    response.headers.get('Content-Type', 'application/octet-stream')
                 )
             }
 
@@ -42,8 +41,13 @@ def upload_attachment(file_url, card_id):
             )
 
             result.raise_for_status()
+            attachment_data = result.json()
+            attachment_id = attachment_data['id']
+            print(f"[persist_attachment] Вложение "
+                  f"{attachment_id} создано: {file_name}")
+
+            return {'attachment_id': attachment_id, 'filename': file_name}
 
     except Exception as e:
-        print(e)
-
-    return result
+        print(f"[persist_attachment] Ошибка при создании вложения: {e}")
+        return None

@@ -1,18 +1,16 @@
-'''
-Кастомный конвертер для markdown, ориентированный под форматирование из
-YouGile. Работает с конкретным пулом тегов, которые есть в текущих данных.
-Теги не входящие в этот пул игнорируются.
-'''
 from bs4 import BeautifulSoup
 
 
 def html_to_markdown(html_input):
-    # TODO: Does't tested yet, need to review
-    # html tags settings
+    """
+    Кастомный конвертер для markdown, ориентированный под форматирование из
+    YouGile. Работает с конкретным пулом тегов, которые есть в текущих данных.
+    Теги не входящие в этот пул игнорируются.
+    """
     tag_handlers = {
-        "p": lambda el: f"{el.get_text(strip=True)}\n\n",
+        "p": lambda el: "".join(parse_element(child) for child in el.contents) + "\n\n",
         "br": lambda el: "  \n",
-        "a": lambda el: f"[{el.get_text(strip=True)}]({el.get('href', '#')})",
+        "a": lambda el: f"[{el.get_text(strip=True) or 'ссылка'}]({el.get('href', '#')})",
         "strong": lambda el: f"**{el.get_text(strip=True)}**",
         "b": lambda el: f"**{el.get_text(strip=True)}**",
         "em": lambda el: f"*{el.get_text(strip=True)}*",
@@ -36,16 +34,17 @@ def html_to_markdown(html_input):
         "h1": lambda el: f"# {el.get_text(strip=True)}\n\n",
         "h2": lambda el: f"## {el.get_text(strip=True)}\n\n",
         "h4": lambda el: f"### {el.get_text(strip=True)}\n\n",
-        "div": lambda el: el.get_text(strip=True),
-        "span": lambda el: el.get_text(strip=True),
+        "div": lambda el: "".join(parse_element(child) for child in el.contents),
+        "span": lambda el: "".join(parse_element(child) for child in el.contents),
     }
 
     def parse_element(element):
-        if element.name in tag_handlers:  # html
-            return tag_handlers[element.name](element)
-        else:  # text
-            return element if isinstance(element, str) else element.get_text(strip=True)
+        if element.name in tag_handlers:  # html-tags found
+            result = tag_handlers[element.name](element)
+            return result if result is not None else ""
+        elif isinstance(element, str):  # simple text
+            return element
+        return ""  # return empty string when element doesn't have any value
 
     soup = BeautifulSoup(html_input, "html.parser")
     return "".join(parse_element(el) for el in soup.contents)
-

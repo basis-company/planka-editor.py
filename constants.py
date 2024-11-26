@@ -6,3 +6,4 @@ DATA_DIR = os.path.join(os.path.dirname(
     'src',
     'data'
 )
+ATTACHMENT_URL = ''
