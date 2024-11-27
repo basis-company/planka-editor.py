@@ -1,7 +1,7 @@
 from src.services.data import load_json, save_json
 
 
-def main(tasks):  # TODO: Проверить результат
+def main(tasks):
     label_positions = {}
 
     def process_task(task):
@@ -9,13 +9,14 @@ def main(tasks):  # TODO: Проверить результат
             for label in task["planka_card_label"]:
                 board_id = label["board_id"]
                 name = label["name"]
-                key = (board_id, name)
 
-                if key not in label_positions:
-                    # board label position logic
-                    label_positions[key] = len(label_positions) * 1000 + 1000
+                if board_id not in label_positions:
+                    label_positions[board_id] = {}
 
-                label["board_position"] = label_positions[key]
+                if name not in label_positions[board_id]:
+                    label_positions[board_id][name] = len(label_positions[board_id]) * 1000 + 1000
+
+                label["board_position"] = label_positions[board_id][name]
 
         if "data" in task and "subtaskList" in task["data"]:
             subtasks = task["data"]["subtaskList"].get("subtasks", [])

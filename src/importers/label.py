@@ -18,7 +18,8 @@ def persist_label(label):
         position=label['position']
     )
     unique_keys = {
-        'card_id': instance.card_id,
-        'label_id': instance.label_id
+        'name': instance.name,
+        'board_id': instance.board_id,
+        'created_at': instance.created_at
     }
-    return persist(instance, unique_keys)
+    return persist(instance, unique_keys, return_dublicate=True)
