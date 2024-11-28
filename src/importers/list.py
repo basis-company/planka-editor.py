@@ -44,4 +44,4 @@ for list_entity in list_data:
 save_json('list.json', list_data)
 print('Импорт успешно завершен. '
       'Идентификаторы Planka добавлены в json. '
-      'Для отмены воспользуйтесь сервисом undo.py')
+      'Для отмены воспользуйтесь service.undo.undo_per_type()')

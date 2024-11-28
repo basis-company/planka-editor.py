@@ -4,7 +4,7 @@ from src.services.auth import get_access_token
 import httpx
 
 
-def persist_attachment(file_url, card_id):
+def persist_attachment(file_url, card_id, context):  # TODO: context handling
     api_token = get_access_token()
 
     headers = {

@@ -1,10 +1,11 @@
 from typing import Dict, Any, Optional, Type, TypeVar
+from src.models.transaction import TransactionContext
 
 from src.services.database import create_sqlalchemy_session
-from src.services.data import load_json, save_json
+# from src.services.data import load_json, save_json
+
 from sqlalchemy.orm import Session
 
-from constants import LOG_FILE_NAME
 
 T = TypeVar('T')
 
@@ -22,7 +23,8 @@ def database() -> Session:
 def persist(
     instance: T,
     unique_keys: Optional[Dict[str, Any]] = None,
-    return_dublicate: bool = False
+    return_dublicate: bool = False,
+    context: Optional["TransactionContext"] = None
 ) -> Optional[T]:
     """
     Создает новую сущность в базе данных или возвращает уже существующую, если 
@@ -39,6 +41,8 @@ def persist(
         return_dublicate (bool, optional): Флаг, указывающий, нужно ли возвращать 
                                            объект существующей сущности при нахождении дубликата.
                                            По умолчанию False.
+        context (TransactionContext, optional): Контекст текущей транзакции, для 
+                                                логирования и работы сервиса undo.
 
     Returns:
         T | None: Возвращает объект сущности, если она была добавлена или найдена, 
@@ -59,13 +63,9 @@ def persist(
         session.add(instance)
         session.commit()
 
-        # execution logging
-        uploaded_data = load_json(LOG_FILE_NAME)
-        entity_name = type(instance).__name__
-        if entity_name not in uploaded_data:
-            uploaded_data[entity_name] = []
-        uploaded_data[entity_name].append(instance.id)
-        save_json(LOG_FILE_NAME, uploaded_data)
+        # logging
+        if context:
+            context.log_entity(type(instance).__name__, instance.id)
 
         return instance
 

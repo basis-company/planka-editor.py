@@ -3,7 +3,7 @@ from src.models.action import Action
 from src.crud import persist
 
 
-def persist_action(action, card_id):
+def persist_action(action, card_id, context):
     instance = Action(
         card_id=card_id,
         user_id=action['user_id'],
@@ -18,4 +18,4 @@ def persist_action(action, card_id):
         'data': instance.data,
         'created_at': instance.created_at
     }
-    return persist(instance, unique_keys)
+    return persist(instance, unique_keys, context=context)

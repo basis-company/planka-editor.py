@@ -108,4 +108,4 @@ for board_entity in board_data:
 save_json('label.json', label_data)
 print('Готово. Импорт успешно завершен. '
       'Идентификаторы Planka добавлены в json. '
-      'Для отмены импорта воспользуйтесь сервисом undo.py')
+      'Для отмены импорта воспользуйтесь service.undo.undo_per_type()')

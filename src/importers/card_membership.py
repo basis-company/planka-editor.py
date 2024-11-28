@@ -3,7 +3,7 @@ from src.models.card_membership import CardMembership
 from src.crud import persist
 
 
-def persist_card_membership(member, card_id):
+def persist_card_membership(member, card_id, context):
     instance = CardMembership(
         card_id=card_id,
         user_id=member['planka_user_id'],
@@ -15,4 +15,4 @@ def persist_card_membership(member, card_id):
         'card_id': instance.card_id,
         'user_id': instance.user_id
     }
-    return persist(instance, unique_keys)
+    return persist(instance, unique_keys, context=context)

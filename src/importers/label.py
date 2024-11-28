@@ -9,7 +9,7 @@ from src.crud import persist
 from src.services.data import load_json, save_json
 
 
-def persist_label(label):
+def persist_label(label, context):
     instance = Label(
         board_id=label['board_id'],
         name=label['name'],
@@ -22,4 +22,4 @@ def persist_label(label):
         'board_id': instance.board_id,
         'created_at': instance.created_at
     }
-    return persist(instance, unique_keys, return_dublicate=True)
+    return persist(instance, unique_keys, return_dublicate=True, context=context)
