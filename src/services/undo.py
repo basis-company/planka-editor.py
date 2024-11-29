@@ -60,7 +60,7 @@ def undo_transaction(transaction_id: str):
             continue
 
         if erase(entity_class, entity["id"]):
-            print(f"{entity['type']}: {entity['id']} "
+            print(f"    {entity['type']}: {entity['id']} "
                   f"was successfully removed.")
         else:
             print(f"[Warning] {entity['type']}: {entity['id']} not removed "
@@ -78,3 +78,7 @@ def undo_transaction(transaction_id: str):
 
     save_json(LOG_FILE_NAME, uploaded_data)
     print(f"Done! File {LOG_FILE_NAME} was updated.")
+
+
+if __name__ == "__main__":
+    undo_transaction('74ee9d6c-9e3c-455d-ac0d-ffac1cb90e6f')

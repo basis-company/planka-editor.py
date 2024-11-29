@@ -1,4 +1,3 @@
-from datetime import datetime
 from src.models.card_label import CardLabel
 from src.crud import persist
 

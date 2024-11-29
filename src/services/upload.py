@@ -1,10 +1,17 @@
+import httpx
+from typing import Optional
 from io import BytesIO
+
 from src.services.auth import get_access_token
 
-import httpx
+from src.models.transaction import TransactionContext
 
 
-def persist_attachment(file_url, card_id, context):  # TODO: context handling
+def persist_attachment(
+    file_url,
+    card_id,
+    context: Optional["TransactionContext"] = None
+):
     api_token = get_access_token()
 
     headers = {
@@ -45,8 +52,11 @@ def persist_attachment(file_url, card_id, context):  # TODO: context handling
             attachment_id = attachment_data['id']
             print(f"[persist_attachment] Вложение "
                   f"{attachment_id} создано: {file_name}")
+            
+            if context:
+                context.log_entity("Attachment", attachment_id)
 
-            return {'attachment_id': attachment_id, 'filename': file_name}
+            return {'id': attachment_id, 'name': file_name}
 
     except Exception as e:
         print(f"[persist_attachment] Ошибка при создании вложения: {e}")

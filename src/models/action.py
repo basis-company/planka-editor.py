@@ -9,7 +9,7 @@ from src.models import Base
 
 
 class Action(Base):
-    __tablename__ = 'Action'
+    __tablename__ = 'action'
 
     id: Mapped[int] = mapped_column(
         primary_key=True,

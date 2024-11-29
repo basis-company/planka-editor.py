@@ -6,7 +6,7 @@ from constants import LOG_FILE_NAME
 from src.models.card import Card
 from src.models.transaction import TransactionContext
 
-from src.crud import persist
+from src.crud import persist, database
 from src.services.data import load_json, save_json
 
 from src.importers.label import persist_label
@@ -41,30 +41,62 @@ def save_transaction_log(context: TransactionContext):
     save_json(LOG_FILE_NAME, uploaded_data)
 
 
-def identify_attachments(card, context):
-    description = card.get('planka_description', '')
+def update_card_description(card_id: int, text: str) -> None:
+    """Обновляет описание карточки в базе."""
+    with database() as session:
+        card_instance = session.query(Card).get(card_id)
+        if not card_instance:
+            raise LookupError(f"Card with id {card_id} not found!")
+        card_instance.description = text
+        session.commit()
 
-    # regex for extracting url's from description
+    print(f"[update_card_description] Card {card_id} "
+          f"description was successfully updated.")
+
+
+def identify_attachments(text, context, card_id=None):
+    """Находит в тексте ссылки на файлы, создает вложения на их
+    основе и заменяет ссылки в тексте на актуальные planka url."""
+    # regex patterns
     url_pattern = re.compile(r'https?://[^\s)]+')
-    links = url_pattern.findall(description)
+    file_pattern = re.compile(r"/root/#file:/user-data/([a-f0-9-]+)/(.+)")
 
+    links = url_pattern.findall(text)
     if not links:
-        return description
+        return text
 
+    # external yougile file links
     for link in links:
         if "yougile.com" in link:
             print(f"[identify_attachments] YouGile URL found: {link}")
-            attachment = persist_attachment(link, card['id'], context)
+            attachment = persist_attachment(link, card_id, context)
             if attachment:
                 new_url = (
                     f"https://planka.basis.services/"
-                    f"attachments/{attachment['attachment_id']}/"
-                    f"download/{attachment['filename']}"
+                    f"attachments/{attachment['id']}/"
+                    f"download/{attachment['name']}"
                 )
                 print(f"[identify_attachments] Attachment added: {new_url}")
-                description = description.replace(link, new_url)
+                text = text.replace(link, new_url)
 
-    return description
+    # internal yougile file links
+    file_matches = file_pattern.findall(text)
+    for file_id, file_name in file_matches:
+        new_file_url = (
+            f"https://ru.yougile.com/user-data/"
+            f"{file_id}/"
+            f"{file_name}"
+        )
+        print(f"[identify_attachments] Attachment added: {new_file_url}")
+        attachment = persist_attachment(new_file_url, card_id, context)
+        if attachment:
+            text = text.replace(f"/root/#file:/user-data/"
+                                f"{file_id}/{file_name}", new_file_url)
+
+    if card_id:
+        update_card_description(card_id, text)
+
+    return text
 
 
 def persist_card(card, context):
@@ -76,20 +108,20 @@ def persist_card(card, context):
         due_date = None
         is_due_date_completed = None
 
-    # archived card
+    # archived card TODO: json snippet
     list_id = card['planka_list_id']
     if card.get("planka_card_is_archived") is True:
         list_id = card['planka_archive_list_id']
         card['title'] = '[Архив] ' + card['title']  # card title prefix
 
-    # card
+    # CARD
     instance = Card(
         board_id=card['planka_board_id'],
         list_id=list_id,
         creator_user_id=card['planka_creator_user_id'],
         position="1000",  # TODO: calculation logic
         name=card['title'],
-        description=identify_attachments(card, context),
+        description=card['description'],
         is_due_date_completed=is_due_date_completed,
         due_date=due_date,
         created_at=datetime.fromtimestamp(card['timestamp'] / 1000)
@@ -103,6 +135,8 @@ def persist_card(card, context):
     created_card_instance = persist(instance, unique_keys, context=context)
     print(f"[persist_card] Added card "
           f"{card['id']} / {created_card_instance.id}")
+    identify_attachments(card['description'], context,
+                         created_card_instance.id)
 
     # card label
     if "planka_card_label" in card:
@@ -110,28 +144,28 @@ def persist_card(card, context):
             created_label_instance = persist_label(label, context)
             persist_card_label(
                 created_label_instance.id,
-                created_card_instance.id,
-                created_card_instance.created_at,
+                instance.id,
+                instance.created_at,
                 context
             )
 
     # card membership
     if "planka_card_membership" in card:
         for member in card["planka_card_membership"]:
-            persist_card_membership(member, created_card_instance.id, context)
+            persist_card_membership(member, instance.id, context)
 
     # actions (chat)
     if "planka_action" in card:
         for action in card['planka_action']:
-            persist_action(action, created_card_instance.id, context)
+            persist_action(action, instance.id, context)
 
     # tasks (checklists)
     if "planka_task" in card:
         for task in card['planka_task']:
             persist_task(
                 task,
-                created_card_instance.id,
-                created_card_instance.created_at,
+                instance.id,
+                instance.created_at,
                 context
             )
 
@@ -139,8 +173,6 @@ def persist_card(card, context):
     if card.get('data', {}).get('subtaskList', {}).get('subtasks'):
         for subcard in card['data']['subtaskList']['subtasks']:
             persist_card(subcard, context)
-
-    save_transaction_log(context)
 
 
 if __name__ == "__main__":
@@ -160,5 +192,5 @@ if __name__ == "__main__":
         print(f"Error processing card {card["id"]}: {e}")
     finally:
         save_transaction_log(context)
-        print("[service.card] Done! To revert changes in the database, "
-              "use the service.undo.undo_transaction() method")
+        print("[service.card] Done! To revert changes in "
+              "the database, use service.undo")
