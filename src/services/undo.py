@@ -1,5 +1,6 @@
 from src.crud import erase
 from src.services.data import load_json, save_json
+from src.services.upload import remove_attachment
 
 from constants import LOG_FILE_NAME
 from constants import ENTITY_TYPES
@@ -55,17 +56,27 @@ def undo_transaction(transaction_id: str):
     for entity in entities:
         entity_class = ENTITY_TYPES.get(entity["type"])
         if entity_class is None:
-            print(f"Entity type {entity['type']} not found.")
+            print(f"    Entity type {entity['type']} not found.")
             remaining_entities.append(entity)
             continue
-
-        if erase(entity_class, entity["id"]):
-            print(f"    {entity['type']}: {entity['id']} "
-                  f"was successfully removed.")
+        elif entity_class == 'Attachment':
+            # print(f"    Entity type {entity['type']} detected.")
+            if remove_attachment(entity['id']):
+                print(f"    {entity['type']}: {entity['id']} "
+                      f"was successfully removed.")
+            else:
+                print(f"[Warning] {entity['type']}: {entity['id']} not removed "
+                      f"for some reason and will be kept in {LOG_FILE_NAME}!")
+                remaining_entities.append(entity)
         else:
-            print(f"[Warning] {entity['type']}: {entity['id']} not removed "
-                  f"for some reason and will be kept in {LOG_FILE_NAME}!")
-            remaining_entities.append(entity)
+            # print(f"    Entity type {entity['type']} detected.")
+            if erase(entity_class, entity["id"]):
+                print(f"    {entity['type']}: {entity['id']} "
+                    f"was successfully removed.")
+            else:
+                print(f"[Warning] {entity['type']}: {entity['id']} not removed "
+                    f"for some reason and will be kept in {LOG_FILE_NAME}!")
+                remaining_entities.append(entity)
 
     if remaining_entities:
         print(f"[Warning] Failed to remove one or more entities "
@@ -81,4 +92,5 @@ def undo_transaction(transaction_id: str):
 
 
 if __name__ == "__main__":
-    undo_transaction('74ee9d6c-9e3c-455d-ac0d-ffac1cb90e6f')
+    undo_transaction('f5aaa01b-5754-48fb-9370-af2b95245822')
+    undo_transaction('785e2beb-74c2-4741-a679-17b324f54627')

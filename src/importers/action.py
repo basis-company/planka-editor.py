@@ -4,11 +4,14 @@ from src.crud import persist
 
 
 def persist_action(action, card_id, context):
+    data = {
+        "text": action['data']
+    }
     instance = Action(
         card_id=card_id,
         user_id=action['user_id'],
         type="commentCard",
-        data=action['data'],
+        data=data,
         created_at=datetime.fromtimestamp(
             action['created_at'] / 1000
         )

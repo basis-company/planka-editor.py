@@ -11,6 +11,7 @@ from src.models.task import Task
 from src.models.project_manager import ProjectManager
 from src.models.project import Project
 from src.models.user_account import UserAccount
+from src.models.attachment import Attachment
 
 
 LOG_FILE_NAME = 'transactions.json'  # service.undo transactions log
@@ -34,5 +35,6 @@ ENTITY_TYPES = {
     'Task': Task,
     'ProjectManager': ProjectManager,
     'Project': Project,
-    'UserAccount': UserAccount
+    'UserAccount': UserAccount,
+    'Attachment': Attachment
 }

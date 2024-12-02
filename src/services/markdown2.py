@@ -11,7 +11,7 @@ def html_to_markdown(html_input):
         "p": lambda el: "".join(parse_element(child) for child in el.contents) + "\n\n",
         "br": lambda el: "  \n",
         "a": lambda el: f"[{el.get_text(strip=True) or 'ссылка'}]({el.get('href', '#')})",
-        "strong": lambda el: f"**{el.get_text(strip=True)}**",
+        "strong": lambda el: f"**{el.get_text(strip=True)}** ",
         "b": lambda el: f"**{el.get_text(strip=True)}**",
         "em": lambda el: f"*{el.get_text(strip=True)}*",
         "i": lambda el: f"*{el.get_text(strip=True)}*",
@@ -43,7 +43,7 @@ def html_to_markdown(html_input):
             result = tag_handlers[element.name](element)
             return result if result is not None else ""
         elif isinstance(element, str):  # simple text
-            return element
+            return element.strip() + " "
         return ""  # return empty string when element doesn't have any value
 
     soup = BeautifulSoup(html_input, "html.parser")
