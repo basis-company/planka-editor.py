@@ -42,50 +42,6 @@ def undo_per_types(entity_class_name: str):
 
 
 # recommended method
-# def undo_transaction(transaction_id: str):
-#     """Метод для отмены загрузки по id транзакции."""
-#     uploaded_data = load_json(LOG_FILE_NAME)
-#     if not uploaded_data or transaction_id not in uploaded_data:
-#         print(f"Transaction {transaction_id} is missing from {LOG_FILE_NAME}")
-#         return
-
-#     transaction = uploaded_data[transaction_id]
-#     entities = transaction["entities"]
-#     remaining_entities = []  # entities to keep in transactions.json
-
-#     for entity in entities:
-#         entity_class = ENTITY_TYPES.get(entity["type"])
-#         if entity_class is None:
-#             print(f"    Entity type {entity['type']} not found.")
-#             remaining_entities.append(entity)
-#             continue
-#         elif entity_class == 'Attachment':
-#             if remove_attachment(entity['id']):
-#                 print(f"    {entity['type']} {entity['id']} removed...")
-#             else:
-#                 print(f"[Warning] {entity['type']}: {entity['id']} not removed "
-#                       f"for some reason and will be kept in {LOG_FILE_NAME}!")
-#                 remaining_entities.append(entity)
-#         else:
-#             if erase(entity_class, entity["id"]):
-#                 print(f"    {entity['type']} {entity['id']} removed...")
-#             else:
-#                 print(f"[Warning] {entity['type']}: {entity['id']} not removed "
-#                       f"for some reason and will be kept in {LOG_FILE_NAME}!")
-#                 remaining_entities.append(entity)
-
-#     if remaining_entities:
-#         print(f"[Warning] Failed to remove one or more entities "
-#               f"from transaction {transaction_id}.")
-#         transaction["entities"] = remaining_entities
-#     else:
-#         print(f"  All entities from transaction "
-#               f"{transaction_id} was successfully removed.")
-#         del uploaded_data[transaction_id]
-
-#     save_json(LOG_FILE_NAME, uploaded_data)
-
-
 def undo_transaction(transaction_id: str):
     """Метод для отмены загрузки по id транзакции."""
     uploaded_data = load_json(LOG_FILE_NAME)
@@ -131,6 +87,5 @@ def undo_transaction(transaction_id: str):
 
 
 if __name__ == "__main__":
-    # undo_transaction('e906d383-deba-4f65-842e-91cd2ac66cda')
     undo_transaction('1733246673166')
     print(f"Done! File {LOG_FILE_NAME} was updated.")
