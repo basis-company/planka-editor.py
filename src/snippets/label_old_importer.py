@@ -7,6 +7,7 @@ from src.models.label import Label
 
 from src.crud import persist
 from src.services.data import load_json, save_json
+from src.services.timestamp import timestamp_format
 
 
 # Тайтлы стикеров, которые будут игнорироваться
@@ -51,9 +52,7 @@ for board_entity in board_data:
                         board_id=board_entity['planka_id'],
                         name=f"{label_entity['title']}: {state['name']}",
                         color=state['planka_color'],
-                        created_at=datetime.fromtimestamp(
-                            label_entity['timestamp'] / 1000
-                        ),
+                        created_at=timestamp_format(label_entity['timestamp']),
                         position=position_iterator
                     )
                     
@@ -80,9 +79,7 @@ for board_entity in board_data:
                     board_id=board_entity['planka_id'],
                     name=label_entity['title'],
                     color='egg-yellow',
-                    created_at=datetime.fromtimestamp(
-                        label_entity['timestamp'] / 1000
-                    ),
+                    created_at=timestamp_format(label_entity['timestamp']),
                     position=position_iterator
                 )
 

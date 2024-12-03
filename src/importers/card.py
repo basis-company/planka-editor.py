@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from constants import LOG_FILE_NAME
 
 from src.models.card import Card
@@ -7,7 +5,8 @@ from src.models.transaction import TransactionContext
 
 from src.crud import persist
 from src.services.data import load_json, save_json
-from src.services.markdown2 import html_to_markdown
+from src.services.markdown import html_to_markdown
+from src.services.timestamp import timestamp_format
 
 from src.importers.label import persist_label
 from src.importers.card_label import persist_card_label
@@ -34,17 +33,22 @@ def save_transaction_log(context: TransactionContext):
     """Сохраняет лог транзакции в файл."""
     uploaded_data = load_json(LOG_FILE_NAME) or {}
     transaction_data = context.get_transaction_data()
-    uploaded_data[context.transaction_id] = {
-        "timestamp": transaction_data["timestamp"],
-        "entities": transaction_data["entities"]
-    }
+
+    if not transaction_data["entities"]:
+        return
+
+    # uploaded_data[context.transaction_id] = {
+    #     "timestamp": transaction_data["timestamp"],
+    #     "entities": transaction_data["entities"]
+    # }
+    uploaded_data[transaction_data["timestamp"]] = transaction_data["entities"]
     save_json(LOG_FILE_NAME, uploaded_data)
 
 
 def persist_card(card, context):
     # due date and completion status
     if "planka_due_date" in card and "planka_is_due_date_completed" in card:
-        due_date = datetime.fromtimestamp(card['planka_due_date'] / 1000)
+        due_date = timestamp_format(card['planka_due_date'], timezone=True)
         is_due_date_completed = card['planka_is_due_date_completed']
     else:
         due_date = None
@@ -61,12 +65,12 @@ def persist_card(card, context):
         board_id=card['planka_board_id'],
         list_id=list_id,
         creator_user_id=card['planka_creator_user_id'],
-        position="1000",  # TODO: calculation logic
+        position="1000",
         name=card['title'],
-        description=html_to_markdown(card['description']),  # card['description']
+        description=html_to_markdown(card['description']),
         is_due_date_completed=is_due_date_completed,
         due_date=due_date,
-        created_at=datetime.fromtimestamp(card['timestamp'] / 1000)
+        created_at=timestamp_format(card['timestamp'], timezone=True)
     )
     unique_keys = {
         'board_id': instance.board_id,
@@ -75,8 +79,10 @@ def persist_card(card, context):
         'name': instance.name
     }
     created_card_instance = persist(instance, unique_keys, context=context)
-    print(f"[persist_card] Added card "
+    print(f"  Added card "
           f"{card['id']} / {created_card_instance.id}")
+    
+    # attachment
     # identify_attachments(
     #     card['description'],
     #     context,
@@ -106,13 +112,16 @@ def persist_card(card, context):
 
     # tasks (checklists)
     if "planka_task" in card:
+        position = 65535
         for task in card['planka_task']:
             persist_task(
                 task,
-                instance.id,
-                instance.created_at,
-                context
+                card_id=instance.id,
+                created_at=instance.created_at,
+                position=position,
+                context=context
             )
+            position += 65535
 
     # recursion for subcards
     if card.get('data', {}).get('subtaskList', {}).get('subtasks'):
@@ -125,7 +134,9 @@ if __name__ == "__main__":
     if not card_data:
         raise TypeError("File task.json doesn't exist or empty!")
 
-    target_card = '152a60cf-bfb7-40ec-917d-d5000b687917'  # temp target card
+    # target_card = '152a60cf-bfb7-40ec-917d-d5000b687917'
+    # target_card = '953096e4-7f0a-4a30-9659-40115bea507d'
+    target_card = 'eb79b211-0b17-4d09-bac8-c12c2ae43aaa'
     card = next(
         (obj for obj in card_data if obj.get('id') == target_card),
         None
@@ -133,9 +144,9 @@ if __name__ == "__main__":
     context = TransactionContext()
     try:
         persist_card(card, context)
+        print("Done! To revert changes in "
+              "the database, use service.undo")
     except Exception as e:
         print(f"Error processing card {card["id"]}: {e}")
     finally:
         save_transaction_log(context)
-        print("[service.card] Done! To revert changes in "
-              "the database, use service.undo")

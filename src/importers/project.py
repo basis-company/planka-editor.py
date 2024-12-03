@@ -8,6 +8,7 @@ from src.models.project_manager import ProjectManager
 
 from src.crud import persist
 from src.services.data import load_json, save_json
+from src.services.timestamp import timestamp_format
 
 
 project_data = load_json('project.json')
@@ -24,7 +25,7 @@ if not project_manager_data:
 # Projects
 for project_entity in project_data:
     project_instance = Project(
-        created_at=datetime.fromtimestamp(project_entity['timestamp'] / 1000),
+        created_at=timestamp_format(project_entity['timestamp']),
         name=project_entity['title']
     )
 

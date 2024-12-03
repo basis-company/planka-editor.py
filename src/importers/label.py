@@ -1,12 +1,9 @@
 """
 Итерация 3: Импортируем метки на доски.
 """
-
-from datetime import datetime
 from src.models.label import Label
 
 from src.crud import persist
-from src.services.data import load_json, save_json
 
 
 def persist_label(label, context):
@@ -22,4 +19,10 @@ def persist_label(label, context):
         'board_id': instance.board_id,
         'created_at': instance.created_at
     }
-    return persist(instance, unique_keys, return_dublicate=True, context=context)
+    
+    return persist(
+        instance,
+        unique_keys,
+        return_dublicate=True,
+        context=context
+    )

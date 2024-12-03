@@ -2,12 +2,11 @@
 Итерация 5: Импортируем бывших сотрудников,
 для сохранения связей и комментариев.
 """
-
-from datetime import datetime
 from src.models.user_account import UserAccount
 
 from src.crud import persist
 from src.services.data import load_json, save_json
+from src.services.timestamp import timestamp_format
 
 
 user_data = load_json('user.json')
@@ -22,9 +21,7 @@ for user_entity in user_data:
             name=user_entity['title'],
             organization="Базис ИТ",
             subscribe_to_own_cards=False,
-            created_at=datetime.fromtimestamp(
-                user_entity['timestamp'] / 1000
-            ),
+            created_at=timestamp_format(user_entity['timestamp']),
             is_sso=True
         )
 

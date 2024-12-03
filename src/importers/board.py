@@ -8,6 +8,7 @@ from src.models.board import Board
 from src.crud import persist
 from src.services.location import get_location_planka_id
 from src.services.data import load_json, save_json
+from src.services.timestamp import timestamp_format
 
 
 board_data = load_json('board.json')
@@ -24,7 +25,7 @@ for board_entity in board_data:
             'project.json',
             board_entity['location']
         ),
-        created_at=datetime.fromtimestamp(board_entity['timestamp'] / 1000),
+        created_at=timestamp_format(board_entity['timestamp']),
         position=0
     )
 

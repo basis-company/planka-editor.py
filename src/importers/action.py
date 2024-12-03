@@ -1,5 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+
 from src.models.action import Action
+from src.services.timestamp import timestamp_format
 from src.crud import persist
 
 
@@ -12,9 +14,7 @@ def persist_action(action, card_id, context):
         user_id=action['user_id'],
         type="commentCard",
         data=data,
-        created_at=datetime.fromtimestamp(
-            action['created_at'] / 1000
-        )
+        created_at=timestamp_format(action['created_at'], timezone=True)
     )
     unique_keys = {
         'card_id': instance.card_id,
