@@ -2,6 +2,9 @@ from src.crud import erase
 from src.services.data import load_json, save_json
 from src.services.upload import remove_attachment
 
+from src.models.attachment import Attachment
+from src.models.card import Card
+
 from constants import LOG_FILE_NAME
 from constants import ENTITY_TYPES
 
@@ -42,15 +45,14 @@ def undo_per_types(entity_class_name: str):
 
 
 # recommended method
-def undo_transaction(transaction_id: str):
+def undo_transaction(json: dict, transaction_id: str):
     """Метод для отмены загрузки по id транзакции."""
-    uploaded_data = load_json(LOG_FILE_NAME)
-    if not uploaded_data or transaction_id not in uploaded_data:
+    if not json or transaction_id not in json:
         print(f"[Error] Transaction {transaction_id} "
               f"is missing from {LOG_FILE_NAME}")
         return
 
-    entities = uploaded_data[transaction_id]
+    entities = json[transaction_id]
     remaining_entities = []  # keep in transactions.json
 
     for entity in entities:
@@ -59,9 +61,16 @@ def undo_transaction(transaction_id: str):
             print(f"    Entity type {entity['type']} not found.")
             remaining_entities.append(entity)
             continue
-        elif entity_class == 'Attachment':
+        elif entity_class == Attachment:
             if remove_attachment(entity['id']):
                 print(f"    {entity['type']} {entity['id']} removed...")
+            else:
+                print(f"[Warning] {entity['type']}: {entity['id']} not removed "
+                      f"for some reason and will be kept in {LOG_FILE_NAME}!")
+                remaining_entities.append(entity)
+        elif entity_class == Card:
+            if erase(entity_class, entity["id"]):
+                print(f"  {entity['type']} {entity['id']} removed...")
             else:
                 print(f"[Warning] {entity['type']}: {entity['id']} not removed "
                       f"for some reason and will be kept in {LOG_FILE_NAME}!")
@@ -77,15 +86,17 @@ def undo_transaction(transaction_id: str):
     if remaining_entities:
         print(f"[Warning] Failed to remove one or more entities "
               f"from transaction {transaction_id}.")
-        uploaded_data[transaction_id] = remaining_entities
+        json[transaction_id] = remaining_entities
     else:
         print(f"  All entities from transaction "
               f"{transaction_id} was successfully removed.")
-        del uploaded_data[transaction_id]
+        del json[transaction_id]
 
-    save_json(LOG_FILE_NAME, uploaded_data)
+    save_json(LOG_FILE_NAME, json)
 
 
 if __name__ == "__main__":
-    undo_transaction('1733246673166')
+    json = load_json(LOG_FILE_NAME)
+    latest_timestamp = str(max(json.keys(), key=int))
+    undo_transaction(json, latest_timestamp)
     print(f"Done! File {LOG_FILE_NAME} was updated.")

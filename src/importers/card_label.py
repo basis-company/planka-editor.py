@@ -6,7 +6,7 @@ def persist_card_label(label_id, card_id, created_at, context):
     instance = CardLabel(
         card_id=card_id,
         label_id=label_id,
-        create_at=created_at
+        created_at=created_at
     )
     unique_keys = {
         'card_id': instance.card_id,

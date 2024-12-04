@@ -5,14 +5,16 @@ from src.models.label import Label
 
 from src.crud import persist
 
+from src.services.timestamp import timestamp_format
+
 
 def persist_label(label, context):
     instance = Label(
         board_id=label['board_id'],
         name=label['name'],
         color=label['color'],
-        created_at=label['created_at'],
-        position=label['position']
+        created_at=timestamp_format(label['created_at']),
+        position=label['board_position']
     )
     unique_keys = {
         'name': instance.name,
