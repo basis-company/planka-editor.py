@@ -63,21 +63,21 @@ def undo_transaction(json: dict, transaction_id: str):
             continue
         elif entity_class == Attachment:
             if remove_attachment(entity['id']):
-                print(f"    {entity['type']} {entity['id']} removed...")
+                print(f"    {entity['type']} {entity['id']} removed")
             else:
                 print(f"[Warning] {entity['type']}: {entity['id']} not removed "
                       f"for some reason and will be kept in {LOG_FILE_NAME}!")
                 remaining_entities.append(entity)
         elif entity_class == Card:
             if erase(entity_class, entity["id"]):
-                print(f"  {entity['type']} {entity['id']} removed...")
+                print(f"  {entity['type']} {entity['id']} removed")
             else:
                 print(f"[Warning] {entity['type']}: {entity['id']} not removed "
                       f"for some reason and will be kept in {LOG_FILE_NAME}!")
                 remaining_entities.append(entity)
         else:
             if erase(entity_class, entity["id"]):
-                print(f"    {entity['type']} {entity['id']} removed...")
+                print(f"    {entity['type']} {entity['id']} removed")
             else:
                 print(f"[Warning] {entity['type']}: {entity['id']} not removed "
                       f"for some reason and will be kept in {LOG_FILE_NAME}!")
@@ -99,4 +99,4 @@ if __name__ == "__main__":
     json = load_json(LOG_FILE_NAME)
     latest_timestamp = str(max(json.keys(), key=int))
     undo_transaction(json, latest_timestamp)
-    print(f"Done! File {LOG_FILE_NAME} was updated.")
+    print(f"Done! File {LOG_FILE_NAME} was updated.\n")

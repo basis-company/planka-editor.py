@@ -1,4 +1,5 @@
 from typing import Dict
+from markdownify import MarkdownConverter
 
 from src.models.card import Card
 from src.models.transaction import TransactionContext
@@ -6,7 +7,7 @@ from src.models.metadata import Metadata
 
 from src.crud import persist
 from src.services.data import load_json, save_json
-from src.services.markdown import html_to_markdown
+# from src.services.markdown import html_to_markdown
 from src.services.timestamp import timestamp_format
 
 from src.importers.label import persist_label
@@ -52,14 +53,7 @@ def persist_card(
         # card metadata
         metadata = Metadata()
 
-        # parent card data
-        if parent_data is not None:
-            metadata.add_parent(parent=parent_data)  # adds a link to the parent card
-        title_prefix = ""
-        if card.get('subtaskList') and card['subtaskList'].get('subtasks'):
-            title_prefix = "[PARENT] "  # 📁
-
-        # archived card TODO: add metadata by using json snippet
+        # archived card
         list_id = card['planka_list_id']
         if card.get("planka_card_is_archived") is True:
             list_id = card['planka_archive_list_id']
@@ -67,16 +61,28 @@ def persist_card(
             metadata.add_metadata_row(f"archived_from_board: {card['planka_list_id']}")
             metadata.add_metadata_row(f"archived_from_list: {card['planka_board_id']}")
 
+        # parent card data
+        if (
+            card.get("data", {})
+            .get("subtaskList", {})
+            .get("subtasks")
+            is not None
+        ):
+            card['title'] = "❖ " + card['title']  # card title prefix
+        if parent_data:
+            metadata.add_parent(parent=parent_data)  # link to the parent card
+            card['title'] = "– " + card['title']
+
         # card
-        description = html_to_markdown(card['description'])
-        meta = metadata.get_string()
-        description = meta + description
+        description = MarkdownConverter().convert(card['description'])
+        description = description.replace("\\.", ".").replace("\\-", "-").replace("\\#", "#")
+        description = metadata.get() + description
         instance = Card(
             board_id=card['planka_board_id'],
             list_id=list_id,
             creator_user_id=card['planka_creator_user_id'],
             position=65535,
-            name=title_prefix + card['title'],
+            name=card['title'],
             description=description,
             is_due_date_completed=is_due_date_completed,
             due_date=due_date,
@@ -90,7 +96,7 @@ def persist_card(
         }
         created_card_instance = persist(instance, unique_keys, context=context)
         print(f"  Added card "
-            f"{card['id']} / {created_card_instance.id}")
+              f"{card['id']} / {created_card_instance.id}")
         
         # attachment
         # identify_attachments(
@@ -152,7 +158,9 @@ if __name__ == "__main__":
 
     # target_card = '152a60cf-bfb7-40ec-917d-d5000b687917'
     # target_card = '953096e4-7f0a-4a30-9659-40115bea507d'
-    target_card = '2c30aa5b-b65a-4ae3-854b-1279f0d187cc'
+    # target_card = '2c30aa5b-b65a-4ae3-854b-1279f0d187cc'  # много субкарт
+    target_card = 'bbd599a8-36dd-4ba4-a95c-4025c356ba56'  # много тасков
+    # target_card = 'fe014e60-5424-4ab1-b90e-3f60ca1bffd4'  # у субкарты в комментах есть url на другую карту
     card = next(
         (obj for obj in card_data if obj.get('id') == target_card),
         None
@@ -161,8 +169,8 @@ if __name__ == "__main__":
     try:
         persist_card(card=card, context=context)
         print("Done! To revert changes in "
-              "the database, use service.undo")
+              "the database, use service.undo\n")
     except Exception as e:
-        print(f"Error processing card {card["id"]}: {e}")
+        print(f"Error processing card {card["id"]}: {e}\n")
     finally:
         save_transaction_log(context)

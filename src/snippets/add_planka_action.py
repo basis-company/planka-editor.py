@@ -4,7 +4,10 @@ users = load_json("user.json")
 tasks = load_json("task.json")
 
 
-def get_user_planka_id(user_id, display_name=None):
+def get_user_planka_id(
+    user_id: str = None,
+    display_name: str = None
+):
     if display_name:
         for user in users:
             if display_name in user.get("display_name", []):
@@ -15,7 +18,7 @@ def get_user_planka_id(user_id, display_name=None):
             if user["id"] == user_id:
                 return user["planka_id"]
 
-    print(f"    Пользователь не найден: {user_id} / {display_name}")
+    # print(f"    Пользователь не найден: {user_id} / {display_name}")
     return None
 
 
@@ -31,13 +34,12 @@ def process_task(task):
                 and message["text"] != "."
                 and "from" in message
             ):
+                display_name = message.get("properties", {}).get("displayName")
                 user_id = message["from"]
-                display_name = None
-
                 if user_id == "0000bdc7-0363-4d30-b5d3-5e0fc72f811f":
-                    display_name = message.get("properties", {}).get("display_name")
-
-                planka_id = get_user_planka_id(user_id, display_name)
+                    planka_id = get_user_planka_id(display_name=display_name)
+                else:
+                    planka_id = get_user_planka_id(user_id=user_id)
 
                 if planka_id:
                     planka_actions.append({
@@ -59,7 +61,7 @@ def main(task):
         process_task(task)
 
     save_json("task.json", tasks)
-    print('[main] Done!')
+    print('[main] Done!\n')
 
 
 if __name__ == "__main__":
