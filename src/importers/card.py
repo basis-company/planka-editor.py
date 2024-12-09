@@ -161,6 +161,7 @@ if __name__ == "__main__":
     # target_card = '2c30aa5b-b65a-4ae3-854b-1279f0d187cc'  # много субкарт
     target_card = 'bbd599a8-36dd-4ba4-a95c-4025c356ba56'  # много тасков
     # target_card = 'fe014e60-5424-4ab1-b90e-3f60ca1bffd4'  # у субкарты в комментах есть url на другую карту
+    # target_card = '5cc9d10d-ce0a-497d-b78f-d80753ffcff2'  # у карты есть вложение нестандартного формата
     card = next(
         (obj for obj in card_data if obj.get('id') == target_card),
         None

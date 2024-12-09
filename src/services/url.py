@@ -1,5 +1,24 @@
 import re
+import urllib.parse
 from src.services.data import load_json, save_json
+
+
+def encode_file_name(encoded_url):
+    """Декодирует Кириллические названия для файлов"""
+    decoded_url = urllib.parse.unquote(urllib.parse.unquote(encoded_url))
+
+    return decoded_url
+
+
+def extract_file_name(url):
+    """
+    Извлекает название файла из ссылки, учитывая кодировку и удаляя лишние параметры.
+    """
+    url = encode_file_name(url)
+    url_without_params = url.split('?')[0]
+    file_name = urllib.parse.unquote(url_without_params).split('/')[-1]
+
+    return file_name
 
 
 def clean_html(text):
@@ -22,9 +41,11 @@ def find_links(
     is_card: bool,
     comment_date: int (if from_comment is True)
     """
-    # TODO: https://ru.yougile.com/team/f56866475f76/#X51-675 исправить ссылки вида #X51-675
     # regex patterns
-    url_pattern = r"https?://[^\s\"']+"
+    # url_pattern = r"https?://[^\s\"']+"
+    # url_pattern = r"https?://[^\s\"']+(?=\s|$|[.,!?)]|\Z)"
+    # url_pattern = r"https?://[^\s\"'>]+(?=\s|<\/?[^>]+>|$)"
+    url_pattern = r"https?://[^\s\"'<>#]+(?:#[^\s\"'<>]*)?"
     internal_pattern = r"/root/#file:[^\s\"']+"
     attachment_pattern = r"yougile\.com/user-data"
     card_pattern = r"https://[^\s\"']+yougile\.com/team[^\s\"']+"
@@ -39,7 +60,10 @@ def find_links(
 
     result = []
     for link in all_links:
-        is_attachment = bool(re.search(attachment_pattern, link))
+        is_attachment = bool(
+            re.search(attachment_pattern, link) or
+            re.search(internal_pattern, link)
+        )
         is_card = bool(re.search(card_pattern, link))
 
         clean_link = clean_html(link)
@@ -52,6 +76,10 @@ def find_links(
             "is_attachment": is_attachment,
             "is_card": is_card
         }
+
+        if is_attachment:
+            file_name = extract_file_name(clean_link)
+            link_data["file_name"] = file_name
 
         if is_card:
             card_id_match = re.search(
@@ -115,7 +143,6 @@ def process_tasks(file_name):
         if unique_links_list:
             task['planka_links'] = unique_links_list
 
-        # Рекурсия для подзадач
         subtasks = task.get('data', {}).get('subtaskList', {}).get('subtasks', [])
         for subtask in subtasks:
             process_task(subtask)
@@ -127,4 +154,5 @@ def process_tasks(file_name):
     print('Done!\n')
 
 
-process_tasks('task.json')
+if __name__ == "__main__":
+    process_tasks('task.json')

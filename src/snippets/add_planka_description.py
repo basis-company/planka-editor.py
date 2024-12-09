@@ -1,5 +1,5 @@
 from src.services.data import load_json, save_json
-from src.services.markdown2 import html_to_markdown
+from src.services.markdown import html_to_markdown
 
 
 def add_planka_description(task):
