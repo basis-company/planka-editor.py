@@ -30,7 +30,10 @@ for project_entity in project_data:
     )
 
     unique_keys = {'name': project_instance.name}
-    created_project_data = persist(project_instance, unique_keys)
+    created_project_data = persist(
+        instance=project_instance,
+        unique_keys=unique_keys
+    )
     if created_project_data is None:
         print(f'Проект {project_entity["title"]} уже был создан ранее!')
         continue

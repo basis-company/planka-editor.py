@@ -5,7 +5,12 @@ from src.services.timestamp import timestamp_format
 from src.crud import persist
 
 
-def persist_action(action, card_id, context):
+def persist_action(
+        action,
+        card_id,
+        session,
+        context
+    ):
     data = {
         "text": action['data']
     }
@@ -21,4 +26,9 @@ def persist_action(action, card_id, context):
         'data': instance.data,
         'created_at': instance.created_at
     }
-    return persist(instance, unique_keys, context=context)
+    return persist(
+        instance=instance,
+        unique_keys=unique_keys,
+        session=session,
+        context=context
+    )

@@ -1,4 +1,6 @@
-from src.crud import erase
+from sqlalchemy.orm import Session
+
+from src.crud import erase, database
 from src.services.data import load_json, save_json
 from src.services.upload import remove_attachment
 
@@ -55,40 +57,54 @@ def undo_transaction(json: dict, transaction_id: str):
     entities = json[transaction_id]
     remaining_entities = []  # keep in transactions.json
 
-    for entity in entities:
-        entity_class = ENTITY_TYPES.get(entity["type"])
-        if entity_class is None:
-            print(f"    Entity type {entity['type']} not found.")
-            remaining_entities.append(entity)
-            continue
-        elif entity_class == Attachment:
-            if remove_attachment(entity['id']):
-                print(f"    {entity['type']} {entity['id']} removed")
-            else:
-                print(f"[Warning] {entity['type']}: {entity['id']} not removed "
-                      f"for some reason and will be kept in {LOG_FILE_NAME}!")
+    with database() as session:
+        for entity in entities:
+            entity_class = ENTITY_TYPES.get(entity["type"])
+            if entity_class is None:
+                print(f"    Entity type {entity['type']} not found.")
                 remaining_entities.append(entity)
-        elif entity_class == Card:
-            if erase(entity_class, entity["id"]):
-                print(f"  {entity['type']} {entity['id']} removed")
+                continue
+            elif entity_class == Attachment:
+                if remove_attachment(entity['id']):
+                    print(f"    {entity['type']} {entity['id']} removed")
+                else:
+                    print(f"[Warning] {entity['type']}: {entity['id']} "
+                          f"not removed for some reason and will be "
+                          f"kept in {LOG_FILE_NAME}!")
+                    remaining_entities.append(entity)
+            elif entity_class == Card:
+                if erase(
+                    entity_class=entity_class,
+                    entity_id=entity["id"],
+                    session=session
+                ):
+                    print(f"▿ {entity['type']} {entity['id']} removed")
+                else:
+                    print(f"[Warning] {entity['type']}: {entity['id']} "
+                          f"not removed for some reason and will be "
+                          f"kept in {LOG_FILE_NAME}!")
+                    remaining_entities.append(entity)
             else:
-                print(f"[Warning] {entity['type']}: {entity['id']} not removed "
-                      f"for some reason and will be kept in {LOG_FILE_NAME}!")
-                remaining_entities.append(entity)
-        else:
-            if erase(entity_class, entity["id"]):
-                print(f"    {entity['type']} {entity['id']} removed")
-            else:
-                print(f"[Warning] {entity['type']}: {entity['id']} not removed "
-                      f"for some reason and will be kept in {LOG_FILE_NAME}!")
-                remaining_entities.append(entity)
+                if erase(
+                    entity_class=entity_class,
+                    entity_id=entity["id"],
+                    session=session
+                ):
+                    print(f"   {entity['type']} {entity['id']} removed")
+                else:
+                    print(f"[Warning] {entity['type']}: {entity['id']} "
+                          f"not removed for some reason and will "
+                          f"be kept in {LOG_FILE_NAME}!")
+                    remaining_entities.append(entity)
+
+        session.commit()
 
     if remaining_entities:
         print(f"[Warning] Failed to remove one or more entities "
               f"from transaction {transaction_id}.")
         json[transaction_id] = remaining_entities
     else:
-        print(f"  All entities from transaction "
+        print(f"All entities from transaction "
               f"{transaction_id} was successfully removed.")
         del json[transaction_id]
 

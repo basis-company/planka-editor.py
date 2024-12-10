@@ -1,14 +1,15 @@
 from typing import Dict
 from markdownify import MarkdownConverter
+from sqlalchemy.orm import Session
 
 from src.models.card import Card
 from src.models.transaction import TransactionContext
 from src.models.metadata import Metadata
 
-from src.crud import persist
+from src.crud import persist, database
 from src.services.data import load_json, save_json
-# from src.services.markdown import html_to_markdown
 from src.services.timestamp import timestamp_format
+# from src.services.markdown import html_to_markdown
 
 from src.importers.label import persist_label
 from src.importers.card_label import persist_card_label
@@ -39,7 +40,8 @@ def save_transaction_log(context: TransactionContext):
 def persist_card(
     card,
     context: TransactionContext,
-    parent_data: Dict[str, any] = None
+    parent_data: Dict[str, any] = None,
+    session: Session = None
 ):
     try:
         # due date and completion status
@@ -68,6 +70,7 @@ def persist_card(
             .get("subtasks")
             is not None
         ):
+            # TODO: add metadata for parents
             card['title'] = "❖ " + card['title']  # card title prefix
         if parent_data:
             metadata.add_parent(parent=parent_data)  # link to the parent card
@@ -94,9 +97,14 @@ def persist_card(
             'created_at': instance.created_at,
             'name': instance.name
         }
-        created_card_instance = persist(instance, unique_keys, context=context)
-        print(f"  Added card "
-              f"{card['id']} / {created_card_instance.id}")
+        created_card_instance = persist(
+            instance=instance,
+            unique_keys=unique_keys,
+            session=session,
+            context=context
+        )
+        print(f"  Card "
+              f"{card['id']} / {created_card_instance.id} added")
         
         # attachment
         # identify_attachments(
@@ -108,23 +116,38 @@ def persist_card(
         # card label
         if "planka_card_label" in card:
             for label in card["planka_card_label"]:
-                created_label_instance = persist_label(label, context)
+                created_label_instance = persist_label(
+                    label=label,
+                    session=session,
+                    context=context
+                )
                 persist_card_label(
                     label_id=created_label_instance.id,
                     card_id=instance.id,
                     created_at=instance.created_at,
+                    session=session,
                     context=context
                 )
 
         # card membership
         if "planka_card_membership" in card:
             for member in card["planka_card_membership"]:
-                persist_card_membership(member, instance.id, context)
+                persist_card_membership(
+                    member=member,
+                    card_id=instance.id,
+                    session=session,
+                    context=context
+                )
 
         # actions (chat)
         if "planka_action" in card:
             for action in card['planka_action']:
-                persist_action(action, instance.id, context)
+                persist_action(
+                    action=action,
+                    card_id=instance.id,
+                    session=session,
+                    context=context
+                )
 
         # tasks (checklists)
         if "planka_task" in card:
@@ -135,6 +158,7 @@ def persist_card(
                     card_id=instance.id,
                     created_at=instance.created_at,
                     position=position,
+                    session=session,
                     context=context
                 )
                 position += 65535
@@ -146,7 +170,12 @@ def persist_card(
                     "id": instance.id,
                     "name": instance.name
                 }
-                persist_card(card=subcard, context=context, parent_data=parent)
+                persist_card(
+                    card=subcard,
+                    context=context,
+                    parent_data=parent,
+                    session=session
+                )
     except Exception as e:
         print(f"Error processing card {card["id"]}: {e}")
 
@@ -154,24 +183,30 @@ def persist_card(
 if __name__ == "__main__":
     card_data = load_json('task.json')
     if not card_data:
-        raise TypeError("File task.json doesn't exist or empty!")
+        raise TypeError("[Error] File task.json doesn't exist or empty!")
 
-    # target_card = '152a60cf-bfb7-40ec-917d-d5000b687917'
-    # target_card = '953096e4-7f0a-4a30-9659-40115bea507d'
-    # target_card = '2c30aa5b-b65a-4ae3-854b-1279f0d187cc'  # много субкарт
-    target_card = 'bbd599a8-36dd-4ba4-a95c-4025c356ba56'  # много тасков
-    # target_card = 'fe014e60-5424-4ab1-b90e-3f60ca1bffd4'  # у субкарты в комментах есть url на другую карту
-    # target_card = '5cc9d10d-ce0a-497d-b78f-d80753ffcff2'  # у карты есть вложение нестандартного формата
-    card = next(
-        (obj for obj in card_data if obj.get('id') == target_card),
-        None
-    )
+    target_card = []
+
+    #target_card.append('152a60cf-bfb7-40ec-917d-d5000b687917')
+    #target_card.append('953096e4-7f0a-4a30-9659-40115bea507d')
+    target_card.append('2c30aa5b-b65a-4ae3-854b-1279f0d187cc')  # много субкарт
+    #target_card.append('bbd599a8-36dd-4ba4-a95c-4025c356ba56')  # много тасков
+    #target_card.append('fe014e60-5424-4ab1-b90e-3f60ca1bffd4')  # у субкарты в комментах есть url на другую карту
+    #target_card.append('5cc9d10d-ce0a-497d-b78f-d80753ffcff2')  # у карты есть вложение нестандартного формата
+
     context = TransactionContext()
+
     try:
-        persist_card(card=card, context=context)
-        print("Done! To revert changes in "
-              "the database, use service.undo\n")
+        with database() as session:
+            for target in target_card:
+                card = next(
+                    (obj for obj in card_data if obj.get('id') == target),
+                    None
+                )
+                persist_card(card=card, context=context, session=session)
+            session.commit()
+        print("Done! Use service.undo to reverse the last transaction.")
     except Exception as e:
-        print(f"Error processing card {card["id"]}: {e}\n")
+        print(f"[Error] Processing Card {card["id"]}: {e}\n")
     finally:
         save_transaction_log(context)

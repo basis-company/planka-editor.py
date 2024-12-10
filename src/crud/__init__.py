@@ -24,6 +24,7 @@ def persist(
     instance: T,
     unique_keys: Optional[Dict[str, Any]] = None,
     return_dublicate: bool = False,
+    session: Optional[Session] = None,
     context: Optional["TransactionContext"] = None
 ) -> Optional[T]:
     """
@@ -41,6 +42,7 @@ def persist(
         return_dublicate (bool, optional): Флаг, указывающий, нужно ли возвращать 
                                            объект существующей сущности при нахождении дубликата.
                                            По умолчанию False.
+        session (Session, optional): Текущая сессия src.crud.database.
         context (TransactionContext, optional): Контекст текущей транзакции, для 
                                                 логирования и работы сервиса undo.
 
@@ -48,38 +50,50 @@ def persist(
         T | None: Возвращает объект сущности, если она была добавлена или найдена, 
                   или None, если сущность с такими ключами уже существует и return_dublicate=False.
     """
-    with database() as session:
-        if unique_keys is not None:
-            existing_instance = (
-                session.query(type(instance))
-                .filter_by(**unique_keys)
-                .first()
-            )
-            if existing_instance:
-                if return_dublicate:
-                    return existing_instance
-                return None
+# with database() as session:
+    if session is None:
+        raise ValueError("[Error] No session provided to the persist method!")
 
-        session.add(instance)
-        session.commit()
+    if unique_keys is not None:
+        existing_instance = (
+            session.query(type(instance))
+            .filter_by(**unique_keys)
+            .first()
+        )
+        if existing_instance:
+            if return_dublicate:
+                return existing_instance
+            return None
 
-        # logging
-        if context:
-            context.log_entity(type(instance).__name__, instance.id)
+    session.add(instance)
+    session.flush()
+    # session.commit()
 
-        return instance
+    # logging
+    if context:
+        context.log_entity(type(instance).__name__, instance.id)
+
+    return instance
 
 
-def erase(entity_class, entity_id: int) -> bool:
-    with database() as session:
-        entity = session.query(entity_class).get(entity_id)
-        if entity:
-            session.delete(entity)
-            session.commit()
-            return True
-        else:
-            print(f"Сущность с id {entity_id} не найдена.")
-            return False
+def erase(
+    entity_class,
+    entity_id: int,
+    session: Optional[Session] = None
+) -> bool:
+# with database() as session:
+    if session is None:
+        raise ValueError("[Error] No session provided to the erase method!")
+
+    entity = session.query(entity_class).get(entity_id)
+    if entity:
+        session.delete(entity)
+        session.flush()
+        # session.commit()
+        return True
+    else:
+        print(f"Сущность с id {entity_id} не найдена.")
+        return False
 
 
 def get_instance(cls: Type[T], id: int) -> T:

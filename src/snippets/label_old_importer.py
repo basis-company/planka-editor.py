@@ -57,8 +57,8 @@ for board_entity in board_data:
                     )
                     
                     created_label_data = persist(
-                        label_instance, 
-                        {   # unique keys
+                        instance=label_instance, 
+                        unique_keys={
                             'name': label_instance.name,
                             'board_id': label_instance.board_id
                         }
@@ -84,8 +84,8 @@ for board_entity in board_data:
                 )
 
                 created_label_data = persist(
-                    label_instance, 
-                    {   # unique keys
+                    instance=label_instance, 
+                    unique_keys={
                         'name': label_instance.name,
                         'board_id': label_instance.board_id
                     }

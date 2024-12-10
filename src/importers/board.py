@@ -33,7 +33,10 @@ for board_entity in board_data:
         'name': board_instance.name,
         'project_id': board_instance.project_id
     }
-    created_project_data = persist(board_instance, unique_keys)
+    created_project_data = persist(
+        instance=board_instance,
+        unique_keys=unique_keys
+    )
 
     if created_project_data is None:
         print(f'Доска {board_entity["title"]} '

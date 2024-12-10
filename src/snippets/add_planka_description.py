@@ -8,7 +8,6 @@ def add_planka_description(task):
     Преобразует поле description в Markdown и сохраняет 
     результат в planka_description.
     """
-
     if 'description' in task:
         task['planka_description'] = html_to_markdown(task['description'])
     else:

@@ -2,7 +2,14 @@ from src.crud import persist
 from src.models.task import Task
 
 
-def persist_task(task, card_id, created_at, position, context):
+def persist_task(
+    task,
+    card_id,
+    created_at,
+    position,
+    session,
+    context
+):
     instance = Task(
         card_id=card_id,
         name=task['name'],
@@ -15,4 +22,9 @@ def persist_task(task, card_id, created_at, position, context):
         'card_id': instance.card_id,
         'created_at': instance.created_at
     }
-    return persist(instance, unique_keys, context=context)
+    return persist(
+        instance=instance,
+        unique_keys=unique_keys,
+        session=session,
+        context=context
+    )

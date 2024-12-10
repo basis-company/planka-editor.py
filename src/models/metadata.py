@@ -4,7 +4,7 @@ class Metadata:
         self.parent = {}
 
     def add_metadata_row(self, row):
-        print(f'[add_metadata_row] Row {row} added...')
+        # print(f'[add_metadata_row] Row {row} added...')
         self.metadata.append(row)
 
     def add_parent(self, parent: dict):

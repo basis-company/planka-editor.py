@@ -8,7 +8,11 @@ from src.crud import persist
 from src.services.timestamp import timestamp_format
 
 
-def persist_label(label, context):
+def persist_label(
+    label,
+    session,
+    context
+):
     instance = Label(
         board_id=label['board_id'],
         name=label['name'],
@@ -23,8 +27,9 @@ def persist_label(label, context):
     }
     
     return persist(
-        instance,
-        unique_keys,
+        instance=instance,
+        unique_keys=unique_keys,
         return_dublicate=True,
+        session=session,
         context=context
     )

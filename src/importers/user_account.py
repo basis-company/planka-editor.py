@@ -26,8 +26,8 @@ for user_entity in user_data:
         )
 
         created_user_data = persist(
-            user_instance, 
-            {   # unique keys
+            instance=user_instance, 
+            unique_keys={
                 'email': user_instance.email,
                 'name': user_instance.name
             }

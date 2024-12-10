@@ -20,8 +20,8 @@ for list_entity in list_data:
     )
 
     created_list_data = persist(
-        list_instance, 
-        {   # unique keys
+        instance=list_instance, 
+        unique_keys={
             'name': list_instance.name,
             'board_id': list_instance.board_id
         }
