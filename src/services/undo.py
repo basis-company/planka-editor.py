@@ -1,5 +1,3 @@
-from sqlalchemy.orm import Session
-
 from src.crud import erase, database
 from src.services.data import load_json, save_json
 from src.services.upload import remove_attachment

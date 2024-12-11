@@ -15,6 +15,7 @@ from src.models.attachment import Attachment
 
 
 LOG_FILE_NAME = 'transactions.json'  # service.undo transactions log
+TASK_FILE_NAME = 'task.json'
 
 DATA_DIR = os.path.join(os.path.dirname(
     os.path.abspath(__file__)),

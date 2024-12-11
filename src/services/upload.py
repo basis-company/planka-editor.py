@@ -84,7 +84,7 @@ def persist_attachment(
                   f"{attachment_id} создано: {file_name}")
 
             if context:
-                context.log_entity("Attachment", attachment_id)
+                context.write("Attachment", attachment_id)
 
             return {'id': attachment_id, 'name': file_name}
 
@@ -110,7 +110,7 @@ def remove_attachment(
             if response.status_code == 200:
                 print(f"    Attachment: {file_id} was successfully removed.")
                 if context:
-                    context.log_entity("Attachment", file_id)
+                    context.write("Attachment", file_id)
                 return True
             else:
                 print(f"[Warning] Attachment: {file_id} Not removed for some "

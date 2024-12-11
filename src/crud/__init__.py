@@ -71,7 +71,7 @@ def persist(
 
     # logging
     if context:
-        context.log_entity(type(instance).__name__, instance.id)
+        context.write(type(instance).__name__, instance.id)
 
     return instance
 

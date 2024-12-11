@@ -9,32 +9,14 @@ from src.models.metadata import Metadata
 from src.crud import persist, database
 from src.services.data import load_json, save_json
 from src.services.timestamp import timestamp_format
-# from src.services.markdown import html_to_markdown
 
 from src.importers.label import persist_label
 from src.importers.card_label import persist_card_label
 from src.importers.card_membership import persist_card_membership
 from src.importers.task import persist_task
 from src.importers.action import persist_action
-# from src.importers.attachment import identify_attachments
 
-from constants import LOG_FILE_NAME
-
-
-def save_transaction_log(context: TransactionContext):
-    """Сохраняет лог транзакции в файл."""
-    uploaded_data = load_json(LOG_FILE_NAME) or {}
-    transaction_data = context.get_transaction_data()
-
-    if not transaction_data["entities"]:
-        return
-
-    # uploaded_data[context.transaction_id] = {
-    #     "timestamp": transaction_data["timestamp"],
-    #     "entities": transaction_data["entities"]
-    # }
-    uploaded_data[transaction_data["timestamp"]] = transaction_data["entities"]
-    save_json(LOG_FILE_NAME, uploaded_data)
+from constants import TASK_FILE_NAME
 
 
 def persist_card(
@@ -45,7 +27,10 @@ def persist_card(
 ):
     try:
         # due date and completion status
-        if "planka_due_date" in card and "planka_is_due_date_completed" in card:
+        if (
+            "planka_due_date" in card and
+            "planka_is_due_date_completed" in card
+        ):
             due_date = timestamp_format(card['planka_due_date'], timezone=True)
             is_due_date_completed = card['planka_is_due_date_completed']
         else:
@@ -60,8 +45,12 @@ def persist_card(
         if card.get("planka_card_is_archived") is True:
             list_id = card['planka_archive_list_id']
             card['title'] = '[Архив] ' + card['title']  # card title prefix
-            metadata.add_metadata_row(f"archived_from_board: {card['planka_list_id']}")
-            metadata.add_metadata_row(f"archived_from_list: {card['planka_board_id']}")
+            metadata.add_metadata_row(
+                f"archived_from_board: {card['planka_list_id']}"
+            )
+            metadata.add_metadata_row(
+                f"archived_from_list: {card['planka_board_id']}"
+            )
 
         # parent card data
         if (
@@ -77,8 +66,14 @@ def persist_card(
             card['title'] = "– " + card['title']
 
         # card
-        description = MarkdownConverter().convert(card['description'])
-        description = description.replace("\\.", ".").replace("\\-", "-").replace("\\#", "#")
+        description = MarkdownConverter().convert(
+            card['description']
+        )
+        description = (
+            description.replace("\\.", ".")
+            .replace("\\-", "-")
+            .replace("\\#", "#")
+        )
         description = metadata.get() + description
         instance = Card(
             board_id=card['planka_board_id'],
@@ -97,21 +92,15 @@ def persist_card(
             'created_at': instance.created_at,
             'name': instance.name
         }
-        created_card_instance = persist(
+        card_instance = persist(
             instance=instance,
             unique_keys=unique_keys,
             session=session,
             context=context
         )
         print(f"  Card "
-              f"{card['id']} / {created_card_instance.id} added")
-        
-        # attachment
-        # identify_attachments(
-        #     card['description'],
-        #     context,
-        #     created_card_instance.id
-        # )
+              f"{card['id']} / {card_instance.id} "
+              f"added")
 
         # card label
         if "planka_card_label" in card:
@@ -176,37 +165,68 @@ def persist_card(
                     parent_data=parent,
                     session=session
                 )
+
+        return card_instance
+
     except Exception as e:
         print(f"Error processing card {card["id"]}: {e}")
 
 
-if __name__ == "__main__":
-    card_data = load_json('task.json')
+def main(card_ids):
+    card_data = load_json(TASK_FILE_NAME)
     if not card_data:
-        raise TypeError("[Error] File task.json doesn't exist or empty!")
+        raise TypeError(f"[Error] File {TASK_FILE_NAME} "
+                        f"doesn't exist or empty!")
 
-    target_card = []
+    context = TransactionContext()  # cards to persist
 
-    #target_card.append('152a60cf-bfb7-40ec-917d-d5000b687917')
-    #target_card.append('953096e4-7f0a-4a30-9659-40115bea507d')
-    target_card.append('2c30aa5b-b65a-4ae3-854b-1279f0d187cc')  # много субкарт
-    #target_card.append('bbd599a8-36dd-4ba4-a95c-4025c356ba56')  # много тасков
-    #target_card.append('fe014e60-5424-4ab1-b90e-3f60ca1bffd4')  # у субкарты в комментах есть url на другую карту
-    #target_card.append('5cc9d10d-ce0a-497d-b78f-d80753ffcff2')  # у карты есть вложение нестандартного формата
+    with database() as session:
+        try:
+            planka_keys = []  # persisted card ID's 
 
-    context = TransactionContext()
-
-    try:
-        with database() as session:
-            for target in target_card:
+            for card_id in card_ids:
                 card = next(
-                    (obj for obj in card_data if obj.get('id') == target),
+                    (obj for obj in card_data if obj.get('id') == card_id),
                     None
                 )
-                persist_card(card=card, context=context, session=session)
+                if card:
+                    created_card = persist_card(
+                        card=card,
+                        context=context,
+                        session=session
+                    )
+                    planka_keys.append(
+                        {
+                            "id": card["id"],
+                            "planka_id": created_card.id
+                        }
+                    )
+                else:
+                    print(f"[Warning] ID {card_id} wasn't "
+                          f"found in {TASK_FILE_NAME}!")
+
             session.commit()
-        print("Done! Use service.undo to reverse the last transaction.")
-    except Exception as e:
-        print(f"[Error] Processing Card {card["id"]}: {e}\n")
-    finally:
-        save_transaction_log(context)
+            context.commit()
+
+            # adding planka_keys to task.json
+            for card in card_data:
+                if card['id'] in planka_keys:
+                    card['planka_id'] = planka_keys[card['id']]
+            save_json("task.json", card_data)
+
+        except Exception as e:  # TODO: fix exception handler 
+            session.rollback()
+            context.rollback()
+            print(f"[Error] Processing Card {card["id"]}: {e}\n")
+
+
+if __name__ == "__main__":
+    card_ids = [
+        '2c30aa5b-b65a-4ae3-854b-1279f0d187cc'#,  # много субкарт
+        # '152a60cf-bfb7-40ec-917d-d5000b687917',
+        # '953096e4-7f0a-4a30-9659-40115bea507d',
+        # 'bbd599a8-36dd-4ba4-a95c-4025c356ba56',  # много тасков
+        # 'fe014e60-5424-4ab1-b90e-3f60ca1bffd4',  # у субкарты в комментах есть url на другую карту
+        # '5cc9d10d-ce0a-497d-b78f-d80753ffcff2'  # у карты есть вложение нестандартного формата
+    ]
+    main(card_ids)
