@@ -45,6 +45,7 @@ def undo_per_types(entity_class_name: str):
 
 
 # recommended method
+# TODO: del planka_id keys filtered by planka_id from context
 def undo_transaction(json: dict, transaction_id: str):
     """Метод для отмены загрузки по id транзакции."""
     if not json or transaction_id not in json:

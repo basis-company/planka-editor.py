@@ -55,7 +55,7 @@ for board_entity in board_data:
                         created_at=timestamp_format(label_entity['timestamp']),
                         position=position_iterator
                     )
-                    
+
                     created_label_data = persist(
                         instance=label_instance, 
                         unique_keys={

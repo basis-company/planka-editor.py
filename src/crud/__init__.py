@@ -50,7 +50,6 @@ def persist(
         T | None: Возвращает объект сущности, если она была добавлена или найдена, 
                   или None, если сущность с такими ключами уже существует и return_dublicate=False.
     """
-# with database() as session:
     if session is None:
         raise ValueError("[Error] No session provided to the persist method!")
 
@@ -67,7 +66,6 @@ def persist(
 
     session.add(instance)
     session.flush()
-    # session.commit()
 
     # logging
     if context:
@@ -81,7 +79,6 @@ def erase(
     entity_id: int,
     session: Optional[Session] = None
 ) -> bool:
-# with database() as session:
     if session is None:
         raise ValueError("[Error] No session provided to the erase method!")
 

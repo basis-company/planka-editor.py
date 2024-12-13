@@ -4,6 +4,7 @@ from src.services.data import load_json, save_json
 def remove_key_from_task(task, key_to_remove):
     """Рекурсивно удаляет указанный ключ из всех карточек"""
     if key_to_remove in task:
+        print(f"  {key_to_remove} removed from {task["id"]}")
         del task[key_to_remove]
 
     if task.get("data", {}).get("subtaskList", {}).get("subtasks"):
@@ -24,7 +25,7 @@ if __name__ == "__main__":
             subcards_count += len(task["data"]["subtaskList"]["subtasks"])
         remove_key_from_task(
             task,
-            key_to_remove="planka_links"
+            key_to_remove="planka_id"
         )
     print(
         f"    {cards_count} cards\n"

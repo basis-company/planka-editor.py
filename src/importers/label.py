@@ -25,7 +25,7 @@ def persist_label(
         'board_id': instance.board_id,
         'created_at': instance.created_at
     }
-    
+
     return persist(
         instance=instance,
         unique_keys=unique_keys,
