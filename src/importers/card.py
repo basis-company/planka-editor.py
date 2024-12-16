@@ -52,7 +52,7 @@ def persist_card(
             list_id = card['planka_list_id']
             if card.get("planka_card_is_archived") is True:
                 list_id = card['planka_archive_list_id']
-                card['title'] = '[Архив] ' + card['title']  # card title prefix
+                # card['title'] = '[Архив] ' + card['title']  # card title prefix
                 metadata.add_metadata_row(
                     f"archived_from_board: {card['planka_list_id']}"
                 )
@@ -78,7 +78,8 @@ def persist_card(
                 board_id=card['planka_board_id'],
                 list_id=list_id,
                 creator_user_id=card['planka_creator_user_id'],
-                position=65535,
+                position=1728729598037 - card['timestamp'],
+                # position=65535,
                 name=card['title'],
                 description=description,
                 is_due_date_completed=is_due_date_completed,
@@ -225,6 +226,7 @@ def main(
             context.commit()
 
             save_json(TASK_FILE_NAME, json)
+            print(f"    Cards planka_id's was updated in {TASK_FILE_NAME} file")
         except Exception as e:
             session.rollback()
             context.commit()
@@ -233,17 +235,11 @@ def main(
 
 if __name__ == "__main__":
     card_ids = []
-        # '0fab3962-bb11-4fe6-9659-7e20766d0893'
-        # '2c30aa5b-b65a-4ae3-854b-1279f0d187cc',  # много субкарт
-        # '152a60cf-bfb7-40ec-917d-d5000b687917'
-        # '953096e4-7f0a-4a30-9659-40115bea507d',
-        # 'bbd599a8-36dd-4ba4-a95c-4025c356ba56',  # много тасков
-        # 'fe014e60-5424-4ab1-b90e-3f60ca1bffd4',  # у субкарты в комментах есть url на другую карту
-        # '5cc9d10d-ce0a-497d-b78f-d80753ffcff2'  # у карты есть вложение нестандартного формата
-    # ]
 
     start_time = time.time()
-    main(card_ids, is_archived=True)
+
+    main(card_ids, is_archived=False)
+
     execution_time = time.time() - start_time
     formatted_time = time.strftime("%H:%M:%S", time.gmtime(execution_time))
     print(f"    Execution time: {formatted_time}")

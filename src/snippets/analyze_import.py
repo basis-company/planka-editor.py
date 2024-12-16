@@ -10,7 +10,7 @@ def analyze_import(filename: str):
         is_archived = task.get("planka_card_is_archived", True)
         planka_id = task.get("planka_id")
 
-        if not planka_id and is_archived is False:
+        if not planka_id and is_archived is True:
             if recursive:
                 print(f"R {task_id}")
             else:
